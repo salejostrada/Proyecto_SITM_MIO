@@ -2,7 +2,7 @@
 build/
 **/build/
 
-results/
+
 *.log
 
 data/datagrams-MiniPilot.csv

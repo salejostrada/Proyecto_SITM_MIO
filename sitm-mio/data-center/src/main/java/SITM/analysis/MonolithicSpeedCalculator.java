@@ -13,6 +13,7 @@ import java.util.TreeSet;
 
 public class MonolithicSpeedCalculator implements SpeedCalculator {
     private static final double MAX_REASONABLE_SPEED_KMH = 100.0;
+    private static final long MAX_PAIR_TIME_GAP_SECONDS = 15 * 60;
 
     private final RouteCsvReader routeReader = new RouteCsvReader();
     private final DatagramCsvReader datagramReader = new DatagramCsvReader();
@@ -48,6 +49,11 @@ public class MonolithicSpeedCalculator implements SpeedCalculator {
             long deltaTimeSeconds = Duration.between(previous.datagramDate(), record.datagramDate()).getSeconds();
             if (deltaTimeSeconds <= 0) {
                 stats.incrementInvalidTimePair();
+                return;
+            }
+            if (deltaTimeSeconds > MAX_PAIR_TIME_GAP_SECONDS) {
+                stats.incrementExcessiveTimeGapPair();
+                previousByTrack.put(trackKey, record);
                 return;
             }
 

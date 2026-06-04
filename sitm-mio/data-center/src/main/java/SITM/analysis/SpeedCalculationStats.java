@@ -12,6 +12,7 @@ public class SpeedCalculationStats {
     private long discardedPairs;
     private long pairsWithNegativeDistance;
     private long pairsWithInvalidTime;
+    private long pairsWithExcessiveTimeGap;
     private long pairsWithUnrealisticSpeed;
     private long outOfOrderRows;
     private int activeRoutes;
@@ -59,6 +60,11 @@ public class SpeedCalculationStats {
     public void incrementInvalidTimePair() {
         discardedPairs++;
         pairsWithInvalidTime++;
+    }
+
+    public void incrementExcessiveTimeGapPair() {
+        discardedPairs++;
+        pairsWithExcessiveTimeGap++;
     }
 
     public void incrementUnrealisticSpeedPair() {
@@ -130,6 +136,10 @@ public class SpeedCalculationStats {
         return pairsWithInvalidTime;
     }
 
+    public long pairsWithExcessiveTimeGap() {
+        return pairsWithExcessiveTimeGap;
+    }
+
     public long pairsWithUnrealisticSpeed() {
         return pairsWithUnrealisticSpeed;
     }
@@ -166,6 +176,7 @@ public class SpeedCalculationStats {
         this.discardedPairs += other.discardedPairs;
         this.pairsWithNegativeDistance += other.pairsWithNegativeDistance;
         this.pairsWithInvalidTime += other.pairsWithInvalidTime;
+        this.pairsWithExcessiveTimeGap += other.pairsWithExcessiveTimeGap;
         this.pairsWithUnrealisticSpeed += other.pairsWithUnrealisticSpeed;
         this.outOfOrderRows += other.outOfOrderRows;
         this.trackGroups += other.trackGroups;

@@ -132,6 +132,9 @@ public class Main {
         System.out.println("Discarded pairs: " + stats.discardedPairs());
         System.out.println("Pairs discarded by negative distance: " + stats.pairsWithNegativeDistance());
         System.out.println("Pairs discarded by invalid time: " + stats.pairsWithInvalidTime());
+        if (stats.pairsWithExcessiveTimeGap() > 0) {
+            System.out.println("Pairs discarded by excessive time gap: " + stats.pairsWithExcessiveTimeGap());
+        }
         System.out.println("Pairs discarded by unrealistic speed: " + stats.pairsWithUnrealisticSpeed());
         System.out.println("Out-of-order rows observed: " + stats.outOfOrderRows());
         System.out.println("Reports generated: " + stats.reportsGenerated());

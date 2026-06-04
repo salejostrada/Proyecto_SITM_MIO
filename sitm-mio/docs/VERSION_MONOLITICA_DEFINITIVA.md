@@ -176,7 +176,7 @@ Flujo:
 5. Identificar el recorrido con TrackKey.
 6. Comparar con el ultimo datagrama visto para ese TrackKey.
 7. Calcular distancia y tiempo.
-8. Descartar pares invalidos o velocidades absurdas.
+8. Descartar pares invalidos, saltos temporales excesivos o velocidades absurdas.
 9. Acumular distancia y tiempo por ruta, ano y mes.
 10. Generar el reporte CSV.
 ```
@@ -191,6 +191,7 @@ Justificacion:
 
 ```text
 El odometer representa distancia desde la ultima parada. Por eso se incluye stopId; comparar odometros entre paradas distintas puede producir resultados incorrectos.
+Como tripId puede reutilizarse en dias diferentes, el TrackKey se complementa con una regla de continuidad temporal para no unir servicios separados.
 ```
 
 Clave de agregacion:
@@ -246,6 +247,7 @@ Se aceptan pares si cumplen:
 ```text
 deltaDistance >= 0
 deltaTimeSeconds > 0
+deltaTimeSeconds <= 900
 speedKmh <= 100
 ```
 
@@ -259,6 +261,12 @@ Decision sobre `speedKmh <= 100`:
 
 ```text
 Se usa como filtro defensivo para descartar saltos anormales. Es un limite alto para operacion urbana de buses.
+```
+
+Decision sobre `deltaTimeSeconds <= 900`:
+
+```text
+Se usa un limite de 15 minutos para evitar unir datagramas de servicios distintos. En el dataset MiniPilot se encontraron pares con la misma clave logica separados por 1, 2 o 3 dias; aceptarlos inflaba totalTimeSeconds y reducia artificialmente averageSpeedKmh.
 ```
 
 ## 11. Implementacion realizada
@@ -333,8 +341,8 @@ lineId,shortName,description,year,month,averageSpeedKmh,totalDistanceMeters,tota
 Ejemplo de salida:
 
 ```csv
-131,T31,Terminal Paso del Comercio - Universidades,2019,5,12.81,13985961.00,3931559.00,133549,OK
-140,T40,Terminal Andres Sanin - Centro,2019,5,4.24,6458282.00,5482651.00,69375,OK
+131,T31,Terminal Paso del Comercio - Universidades,2019,5,16.50,13985895.00,3051338.00,133537,OK
+140,T40,Terminal Andres Sanin - Centro,2019,5,15.42,6458017.00,1507333.00,69331,OK
 ```
 
 Campos principales:
@@ -397,15 +405,24 @@ Rows read: 8145462
 Rows accepted: 5759049
 Rows discarded: 2386413
 Track groups: 962251
-Valid pairs: 3947423
-Discarded pairs: 849375
-Pairs discarded by negative distance: 540077
+Valid pairs: 3943978
+Discarded pairs: 852820
+Pairs discarded by negative distance: 510188
 Pairs discarded by invalid time: 263175
+Pairs discarded by excessive time gap: 33334
 Pairs discarded by unrealistic speed: 46123
 Out-of-order rows observed: 0
 Reports generated: 111
-Elapsed ms: 18061
+Elapsed ms: 39876
 BUILD SUCCESSFUL
+```
+
+Revision de calidad del resultado:
+
+```text
+Antes del filtro temporal habia 43 rutas OK con velocidad promedio mayor a 0 y menor a 4 km/h.
+Despues del filtro temporal queda 1 ruta OK por debajo de 4 km/h.
+Ejemplo: T50 pasa de 1.90 km/h a 15.80 km/h porque se dejan de acumular gaps de dias entre datagramas que no pertenecen al mismo servicio continuo.
 ```
 
 ## 15. Deployment de la version monolitica
@@ -468,6 +485,7 @@ Pendiente recomendado para el documento de resultados final:
 - Esta version no usa distribucion.
 - Esta version no implementa visualizacion.
 - El archivo `datagrams4Pilot.csv` no es necesario para V1; se usara despues para pruebas de rendimiento.
+- El limite de 15 minutos es una regla defensiva de continuidad temporal. Si el dominio define otra frecuencia maxima entre datagramas consecutivos, el umbral debe ajustarse y volver a ejecutar la validacion.
 - Si en otro dataset las filas no estan ordenadas cronologicamente, puede ser necesario ordenar por `TrackKey` y fecha o ajustar el algoritmo.
 
 ## 18. Conclusion
@@ -482,4 +500,3 @@ Ademas, deja una base reutilizable para las siguientes versiones:
 
 - V2 concurrente: puede procesar particiones usando los mismos modelos, lectores y acumuladores.
 - V3 distribuida: puede reutilizar el mismo concepto de acumulados parciales y reduccion final.
-
