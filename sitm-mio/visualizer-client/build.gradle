@@ -1,5 +1,6 @@
 plugins {
     id 'org.openjfx.javafxplugin' version '0.1.0'
+    id 'application'
 }
 
 javafx {
@@ -9,6 +10,10 @@ javafx {
 
 dependencies {
     implementation project(':contracts')
+}
+
+application {
+    mainClass = 'SITM.Main'
 }
 
 jar {

@@ -1,3 +1,11 @@
+plugins {
+    id 'application'
+}
+
 dependencies {
     implementation project(':contracts')
+}
+
+application {
+    mainClass = 'SITM.Main'
 }

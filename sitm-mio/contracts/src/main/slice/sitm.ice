@@ -57,4 +57,23 @@ module SITM {
         SpeedReportSeq getMonthlyReports(int year);
     };
 
+    struct SpeedPartial {
+        int lineId;
+        int year;
+        int month;
+        double totalDistanceMeters;
+        double totalTimeSeconds;
+        long samples;
+    };
+
+    sequence<SpeedPartial> SpeedPartialSeq;
+
+    sequence<Datagram> DatagramSeq;
+
+    interface SpeedWorker {
+        void addDatagrams(DatagramSeq batch);
+        SpeedPartialSeq getResults();
+        void clear();
+    };
+
 };

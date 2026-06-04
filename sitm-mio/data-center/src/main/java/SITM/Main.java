@@ -11,9 +11,16 @@ import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) {
-        if (args.length > 0 && ("monolithic".equalsIgnoreCase(args[0]) || "concurrent".equalsIgnoreCase(args[0]))) {
-            runAnalysis(args);
-            return;
+        if (args.length > 0) {
+            String mode = args[0].toLowerCase();
+            if ("monolithic".equals(mode) || "concurrent".equals(mode) || "distributed-coordinator".equals(mode)) {
+                runAnalysis(args);
+                return;
+            }
+            if ("distributed-worker".equals(mode)) {
+                runWorker(args);
+                return;
+            }
         }
 
         try (Communicator communicator = Util.initialize(args)) {
@@ -34,6 +41,9 @@ public class Main {
         } else if ("concurrent".equals(mode) && args.length < 5) {
             System.err.println("Uso: concurrent <datagramsFile> <routesFile> <outputFile> <numThreads>");
             System.exit(1);
+        } else if ("distributed-coordinator".equals(mode) && args.length < 5) {
+            System.err.println("Uso: distributed-coordinator <datagramsFile> <routesFile> <outputFile> <worker1_host:port> [worker2_host:port ...]");
+            System.exit(1);
         }
 
         Path datagramsFile = Path.of(args[1]);
@@ -45,15 +55,54 @@ public class Main {
             if ("concurrent".equals(mode)) {
                 int numThreads = Integer.parseInt(args[4]);
                 calculator = new SITM.analysis.ConcurrentSpeedCalculator(numThreads);
+            } else if ("distributed-coordinator".equals(mode)) {
+                try (Communicator communicator = Util.initialize()) {
+                    java.util.List<SITM.SpeedWorkerPrx> workers = new java.util.ArrayList<>();
+                    for (int i = 4; i < args.length; i++) {
+                        String[] parts = args[i].split(":");
+                        String host = parts[0];
+                        String port = parts[1];
+                        workers.add(SITM.SpeedWorkerPrx.checkedCast(
+                            communicator.stringToProxy("SpeedWorker:default -h " + host + " -p " + port)));
+                    }
+                    calculator = new SITM.analysis.DistributedSpeedCalculator(workers);
+                    executeAndReport(calculator, datagramsFile, routesFile, outputFile, mode);
+                    return;
+                }
             } else {
                 calculator = new SITM.analysis.MonolithicSpeedCalculator();
             }
 
-            SpeedCalculationResult result = calculator.calculate(datagramsFile, routesFile);
-            new SpeedReportCsvWriter().write(outputFile, result.reports());
-            printStats(mode, datagramsFile, routesFile, outputFile, result.stats());
+            executeAndReport(calculator, datagramsFile, routesFile, outputFile, mode);
         } catch (java.lang.Exception ex) {
             System.err.println("Error ejecutando calculo " + mode + ": " + ex.getMessage());
+            ex.printStackTrace();
+            System.exit(2);
+        }
+    }
+
+    private static void executeAndReport(SITM.analysis.SpeedCalculator calculator, Path datagramsFile, Path routesFile, Path outputFile, String mode) throws java.io.IOException {
+        SITM.analysis.SpeedCalculationResult result = calculator.calculate(datagramsFile, routesFile);
+        new SITM.analysis.SpeedReportCsvWriter().write(outputFile, result.reports());
+        printStats(mode, datagramsFile, routesFile, outputFile, result.stats());
+    }
+
+    private static final void runWorker(String[] args) {
+        if (args.length < 2) {
+            System.err.println("Uso: distributed-worker <port>");
+            System.exit(1);
+        }
+        int port = Integer.parseInt(args[1]);
+
+        try (Communicator communicator = Util.initialize()) {
+            ObjectAdapter adapter = communicator.createObjectAdapterWithEndpoints("SpeedWorkerAdapter", "default -p " + port);
+            DistributedWorkerI servant = new DistributedWorkerI();
+            adapter.add(servant, Util.stringToIdentity("SpeedWorker"));
+            adapter.activate();
+            System.out.println("SpeedWorker iniciado en el puerto " + port + "...");
+            communicator.waitForShutdown();
+        } catch (java.lang.Exception ex) {
+            System.err.println("Error iniciando worker: " + ex.getMessage());
             ex.printStackTrace();
             System.exit(2);
         }

@@ -11,6 +11,12 @@ public class SpeedAccumulator {
         samples++;
     }
 
+    public void add(double distanceMeters, double timeSeconds, long samples) {
+        this.totalDistanceMeters += distanceMeters;
+        this.totalTimeSeconds += timeSeconds;
+        this.samples += samples;
+    }
+
     public double totalDistanceMeters() {
         return totalDistanceMeters;
     }
