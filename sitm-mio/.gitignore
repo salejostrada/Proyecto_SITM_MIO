@@ -1,0 +1,10 @@
+.gradle/
+build/
+**/build/
+
+results/
+*.log
+
+data/datagrams-MiniPilot.csv
+data/datagrams4Pilot.csv
+data/*.zip

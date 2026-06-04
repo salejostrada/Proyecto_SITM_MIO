@@ -1,0 +1,15 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation project(':contracts')
+}
+
+application {
+    mainClass = 'SITM.Main'
+}
+
+tasks.named('run') {
+    workingDir = rootProject.projectDir
+}
