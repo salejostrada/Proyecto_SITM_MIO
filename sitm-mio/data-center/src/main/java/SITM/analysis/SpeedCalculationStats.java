@@ -153,4 +153,21 @@ public class SpeedCalculationStats {
     public long elapsedMs() {
         return elapsedMs;
     }
+
+    public void merge(SpeedCalculationStats other) {
+        this.rowsRead += other.rowsRead;
+        this.rowsAccepted += other.rowsAccepted;
+        this.rowsDiscarded += other.rowsDiscarded;
+        this.rowsWithInvalidColumnCount += other.rowsWithInvalidColumnCount;
+        this.rowsWithParseError += other.rowsWithParseError;
+        this.rowsWithInactiveRoute += other.rowsWithInactiveRoute;
+        this.rowsWithInvalidValues += other.rowsWithInvalidValues;
+        this.validPairs += other.validPairs;
+        this.discardedPairs += other.discardedPairs;
+        this.pairsWithNegativeDistance += other.pairsWithNegativeDistance;
+        this.pairsWithInvalidTime += other.pairsWithInvalidTime;
+        this.pairsWithUnrealisticSpeed += other.pairsWithUnrealisticSpeed;
+        this.outOfOrderRows += other.outOfOrderRows;
+        this.trackGroups += other.trackGroups;
+    }
 }

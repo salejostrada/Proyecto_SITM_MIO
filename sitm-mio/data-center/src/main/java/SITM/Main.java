@@ -11,8 +11,8 @@ import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) {
-        if (args.length > 0 && "monolithic".equalsIgnoreCase(args[0])) {
-            runMonolithic(args);
+        if (args.length > 0 && ("monolithic".equalsIgnoreCase(args[0]) || "concurrent".equalsIgnoreCase(args[0]))) {
+            runAnalysis(args);
             return;
         }
 
@@ -26,10 +26,13 @@ public class Main {
         }
     }
 
-    private static void runMonolithic(String[] args) {
-        if (args.length < 4) {
+    private static void runAnalysis(String[] args) {
+        String mode = args[0].toLowerCase();
+        if ("monolithic".equals(mode) && args.length < 4) {
             System.err.println("Uso: monolithic <datagramsFile> <routesFile> <outputFile>");
-            System.err.println("Ejemplo: monolithic data/datagrams-MiniPilot.csv data/lines-241-ActiveGT.csv results/v1-mini.csv");
+            System.exit(1);
+        } else if ("concurrent".equals(mode) && args.length < 5) {
+            System.err.println("Uso: concurrent <datagramsFile> <routesFile> <outputFile> <numThreads>");
             System.exit(1);
         }
 
@@ -38,24 +41,32 @@ public class Main {
         Path outputFile = Path.of(args[3]);
 
         try {
-            MonolithicSpeedCalculator calculator = new MonolithicSpeedCalculator();
+            SITM.analysis.SpeedCalculator calculator;
+            if ("concurrent".equals(mode)) {
+                int numThreads = Integer.parseInt(args[4]);
+                calculator = new SITM.analysis.ConcurrentSpeedCalculator(numThreads);
+            } else {
+                calculator = new SITM.analysis.MonolithicSpeedCalculator();
+            }
+
             SpeedCalculationResult result = calculator.calculate(datagramsFile, routesFile);
             new SpeedReportCsvWriter().write(outputFile, result.reports());
-            printStats(datagramsFile, routesFile, outputFile, result.stats());
+            printStats(mode, datagramsFile, routesFile, outputFile, result.stats());
         } catch (java.lang.Exception ex) {
-            System.err.println("Error ejecutando calculo monolitico: " + ex.getMessage());
+            System.err.println("Error ejecutando calculo " + mode + ": " + ex.getMessage());
             ex.printStackTrace();
             System.exit(2);
         }
     }
 
     private static void printStats(
+            String mode,
             Path datagramsFile,
             Path routesFile,
             Path outputFile,
             SpeedCalculationStats stats) {
 
-        System.out.println("Mode: monolithic");
+        System.out.println("Mode: " + mode);
         System.out.println("Routes file: " + routesFile);
         System.out.println("Datagrams file: " + datagramsFile);
         System.out.println("Output file: " + outputFile);

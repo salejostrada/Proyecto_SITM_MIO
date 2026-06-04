@@ -29,4 +29,10 @@ public class SpeedAccumulator {
         }
         return (totalDistanceMeters / totalTimeSeconds) * 3.6;
     }
+
+    public void merge(SpeedAccumulator other) {
+        this.totalDistanceMeters += other.totalDistanceMeters;
+        this.totalTimeSeconds += other.totalTimeSeconds;
+        this.samples += other.samples;
+    }
 }
