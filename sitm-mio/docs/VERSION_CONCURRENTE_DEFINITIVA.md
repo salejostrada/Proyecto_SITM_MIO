@@ -224,17 +224,14 @@ Se aceptan pares si cumplen:
 ```text
 deltaDistance >= 0
 deltaTimeSeconds > 0
+deltaTimeSeconds <= 900
 speedKmh <= 100
 ```
 
-Hallazgo de revision:
+Decision sobre `deltaTimeSeconds <= 900`:
 
 ```text
-La version concurrente actual no aplica todavia la regla de continuidad temporal agregada a la version monolitica corregida:
-
-deltaTimeSeconds <= 900
-
-Por eso, con MiniPilot reproduce los resultados bajos de la version monolitica anterior a la correccion temporal.
+Se usa el mismo limite de 15 minutos de la version monolitica corregida. Esta regla evita unir datagramas de servicios distintos que reutilizan lineId, busId, tripId y stopId pero estan separados por horas o dias.
 ```
 
 ## 11. Implementacion realizada
@@ -321,9 +318,9 @@ lineId,shortName,description,year,month,averageSpeedKmh,totalDistanceMeters,tota
 Ejemplo de salida de V2 con MiniPilot:
 
 ```csv
-131,T31,Terminal Paso del Comercio - Universidades,2019,5,12.81,13985961.00,3931559.00,133549,OK
-140,T40,Terminal Andres Sanin - Centro,2019,5,4.24,6458282.00,5482651.00,69375,OK
-150,T50,Estacion Nuevo Latir - Centro,2019,5,1.90,4716689.00,8932353.00,54292,OK
+131,T31,Terminal Paso del Comercio - Universidades,2019,5,16.50,13985895.00,3051338.00,133537,OK
+140,T40,Terminal Andres Sanin - Centro,2019,5,15.42,6458017.00,1507333.00,69331,OK
+150,T50,Estacion Nuevo Latir - Centro,2019,5,15.80,4706447.00,1072203.00,54204,OK
 ```
 
 ## 14. Resultados de validacion
@@ -372,14 +369,15 @@ Rows discarded by parse error: 0
 Rows discarded by inactive route: 0
 Rows discarded by invalid values: 2386413
 Track groups: 962251
-Valid pairs: 3947423
-Discarded pairs: 849375
-Pairs discarded by negative distance: 540077
+Valid pairs: 3943978
+Discarded pairs: 852820
+Pairs discarded by negative distance: 510188
 Pairs discarded by invalid time: 263175
+Pairs discarded by excessive time gap: 33334
 Pairs discarded by unrealistic speed: 46123
 Out-of-order rows observed: 0
 Reports generated: 111
-Elapsed ms: 59389
+Elapsed ms: 51861
 BUILD SUCCESSFUL
 ```
 
@@ -387,33 +385,28 @@ BUILD SUCCESSFUL
 
 ```text
 Rutas OK: 95
-Rutas OK con velocidad mayor a 0 y menor a 4 km/h: 43
-Rutas OK con velocidad mayor a 0 y menor a 1 km/h: 20
+Rutas OK con velocidad mayor a 0 y menor a 4 km/h: 1
+Rutas OK con velocidad mayor a 0 y menor a 1 km/h: 1
 ```
 
 Comparacion contra V1 corregida:
 
 ```text
-V1 corregida descarta pares con deltaTimeSeconds > 900.
-V2 actual no descarta esos pares.
-Por eso T50 queda en 1.90 km/h en V2, mientras V1 corregida queda en 15.80 km/h.
+V1 corregida y V2 corregida descartan pares con deltaTimeSeconds > 900.
+Con MiniPilot, ambos CSV son equivalentes.
+T50 queda en 15.80 km/h en ambas versiones.
 ```
 
-Rutas con mayores diferencias observadas contra V1 corregida:
+Verificacion de equivalencia:
 
 ```text
-A35A: V2 0.37 km/h, V1 corregida 15.63 km/h
-A71:  V2 0.96 km/h, V1 corregida 15.69 km/h
-A34:  V2 0.44 km/h, V1 corregida 14.87 km/h
-A75:  V2 0.32 km/h, V1 corregida 14.56 km/h
-A22:  V2 0.10 km/h, V1 corregida 14.25 km/h
-T50:  V2 1.90 km/h, V1 corregida 15.80 km/h
+git diff --no-index -- sitm-mio/results/v1-mini.csv sitm-mio/results/v2-mini.csv
 ```
 
-Diagnostico:
+Resultado:
 
 ```text
-La implementacion concurrente es funcional y procesable, pero aun no debe usarse como version final de resultados si el criterio de correctitud es la V1 corregida. Antes de comparar rendimiento o subirla como version definitiva a main, debe alinearse con la regla temporal de V1.
+Sin diferencias.
 ```
 
 ## 15. Comparacion con la version monolitica
@@ -436,13 +429,13 @@ Diferencias:
 - V2 usa un productor y varios workers.
 - V2 mantiene acumuladores parciales por worker.
 - V2 combina resultados al final.
-- V2 actual no tiene el filtro temporal deltaTimeSeconds <= 900 que ya tiene V1 corregida.
+- V2 aplica la misma regla temporal de V1 corregida, pero la ejecuta dentro de cada worker.
 ```
 
-Resultado esperado para aceptacion final:
+Resultado de aceptacion funcional:
 
 ```text
-Cuando V2 incorpore las mismas reglas de limpieza que V1, los resultados CSV deben coincidir con V1 corregida para el mismo dataset.
+Con MiniPilot, results/v2-mini.csv coincide con results/v1-mini.csv.
 ```
 
 ## 16. Deployment de la version concurrente
@@ -481,32 +474,31 @@ JAVA_OPTS="-Xmx8g" ./bin/data-center concurrent /opt/sitm-mio/datagrams4Pilot.cs
 [x] Registrar metricas principales.
 [x] Revisar si el formato CSV coincide con V1.
 [x] Detectar diferencia de reglas frente a V1 corregida.
-[ ] Alinear V2 con la regla deltaTimeSeconds <= 900.
-[ ] Reejecutar V2 despues de la alineacion.
-[ ] Comparar CSV de V2 alineada contra V1 corregida.
+[x] Alinear V2 con la regla deltaTimeSeconds <= 900.
+[x] Reejecutar V2 despues de la alineacion.
+[x] Comparar CSV de V2 alineada contra V1 corregida.
 [ ] Medir rendimiento con varios numeros de hilos.
 ```
 
 ## 18. Limitaciones
 
 - La ejecucion local revisada con 8 hilos fue mas lenta que la V1 corregida en esta maquina. Esto puede deberse a que la lectura del CSV sigue siendo un cuello de botella, al costo de colas bloqueantes y al overhead de coordinacion.
-- V2 actual no incluye el filtro temporal de 15 minutos agregado a V1 corregida.
 - La cantidad de hilos se recibe por argumento, pero no hay validacion defensiva para valores menores o iguales a cero.
 - El uso de `Math.abs(h % numThreads)` puede fallar en casos extremos si el hash produce `Integer.MIN_VALUE`, aunque es poco probable.
-- El archivo `results/resultado_v2.csv` existente contiene resultados de 2018 y no se uso como evidencia de la ejecucion MiniPilot 2019 revisada aqui.
+- El archivo `results/resultado_v2.csv` existente contiene resultados de 2018 generados antes de esta revision; la evidencia corregida de MiniPilot queda en `results/v2-mini.csv`.
 
 ## 19. Conclusion
 
-La version concurrente cumple parcialmente el objetivo de V2:
+La version concurrente cumple el objetivo funcional de V2:
 
 ```text
-Procesa el dataset en una sola maquina usando multiples hilos y mantiene el formato de salida de V1.
+Procesa el dataset en una sola maquina usando multiples hilos, mantiene el formato de salida de V1 y produce resultados equivalentes al baseline monolitico corregido.
 ```
 
-Sin embargo, despues de corregir la version monolitica, V2 queda pendiente de alineacion funcional:
+Queda pendiente evaluar rendimiento con varios numeros de hilos:
 
 ```text
-Debe aplicar la misma regla deltaTimeSeconds <= 900 para evitar unir datagramas de servicios distintos y producir resultados comparables con V1 corregida.
+La validacion funcional ya paso con MiniPilot; la mejora de tiempo debe medirse con datasets mas grandes y configuraciones de hilos diferentes.
 ```
 
-Una vez aplicada esa alineacion, V2 podra usarse para comparar rendimiento de forma valida contra el baseline monolitico corregido.
+Con esta alineacion, V2 ya puede usarse para comparar rendimiento de forma valida contra el baseline monolitico corregido.

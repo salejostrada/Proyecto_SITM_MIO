@@ -2,6 +2,7 @@
 build/
 **/build/
 
+results/v2-mini.csv
 
 *.log
 

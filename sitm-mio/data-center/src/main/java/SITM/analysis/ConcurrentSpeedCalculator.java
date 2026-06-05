@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ConcurrentSpeedCalculator implements SpeedCalculator {
     private static final double MAX_REASONABLE_SPEED_KMH = 100.0;
+    private static final long MAX_PAIR_TIME_GAP_SECONDS = 15 * 60;
     private static final int QUEUE_CAPACITY = 50000;
     private static final int LOG_INTERVAL = 1000000;
 
@@ -197,6 +198,11 @@ public class ConcurrentSpeedCalculator implements SpeedCalculator {
             long deltaTimeSeconds = Duration.between(previous.datagramDate(), record.datagramDate()).getSeconds();
             if (deltaTimeSeconds <= 0) {
                 stats.incrementInvalidTimePair();
+                return;
+            }
+            if (deltaTimeSeconds > MAX_PAIR_TIME_GAP_SECONDS) {
+                stats.incrementExcessiveTimeGapPair();
+                previousByTrack.put(trackKey, record);
                 return;
             }
 
