@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SITM-MIO Analysis Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f7f6; }
+        .container { max-width: 1200px; margin: auto; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat-card { background: #2c3e50; color: white; padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; }
+        .stat-label { font-size: 14px; opacity: 0.8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; position: sticky; top: 0; }
+        tr:hover { background-color: #f1f1f1; }
+        .status-ok { color: green; font-weight: bold; }
+        .status-no-data { color: gray; }
+        .chart-container { position: relative; height: 400px; width: 100%; }
+        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>SITM-MIO - Reporte de Velocidades Promedio</h1>
+            <div id="file-info" style="color: #666; font-size: 0.9em; margin-bottom: 10px;"></div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="total-routes">-</div>
+                <div class="stat-label">Rutas Analizadas</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avg-system-speed">-</div>
+                <div class="stat-label">Velocidad Promedio Sistema (km/h)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-samples">-</div>
+                <div class="stat-label">Muestras Totales</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Comparativa de Velocidades (Top 10 Más Rápidas)</h2>
+            <div class="chart-container">
+                <canvas id="speedChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Listado Detallado de Rutas</h2>
+            <input type="text" id="searchInput" placeholder="Buscar por nombre o ID de ruta..." onkeyup="filterTable()">
+            <div style="max-height: 500px; overflow-y: auto;">
+                <table id="routesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Ruta</th>
+                            <th>Descripción</th>
+                            <th>Año/Mes</th>
+                            <th>Velocidad (km/h)</th>
+                            <th>Distancia (km)</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+
+        function setData(jsonData, filename) {
+            document.getElementById('file-info').innerText = "Archivo: " + filename;
+            allData = JSON.parse(jsonData);
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            const validData = allData.filter(d => d.status === 'OK');
+            
+            // Stats
+            document.getElementById('total-routes').innerText = validData.length;
+            const totalSpeed = validData.reduce((acc, d) => acc + parseFloat(d.averageSpeedKmh), 0);
+            document.getElementById('avg-system-speed').innerText = (totalSpeed / validData.length).toFixed(2);
+            const totalSamples = validData.reduce((acc, d) => acc + parseInt(d.samples), 0);
+            document.getElementById('total-samples').innerText = totalSamples.toLocaleString();
+
+            // Table
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            allData.forEach(d => {
+                const tr = document.createElement('tr');
+                const speed = parseFloat(d.averageSpeedKmh).toFixed(2);
+                const distance = (parseFloat(d.totalDistanceMeters) / 1000).toFixed(2);
+                tr.innerHTML = `
+                    <td>${d.lineId}</td>
+                    <td><b>${d.shortName}</b></td>
+                    <td>${d.description}</td>
+                    <td>${d.year}/${d.month}</td>
+                    <td>${speed}</td>
+                    <td>${distance}</td>
+                    <td class="${d.status === 'OK' ? 'status-ok' : 'status-no-data'}">${d.status}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Chart
+            const top10 = [...validData]
+                .sort((a, b) => b.averageSpeedKmh - a.averageSpeedKmh)
+                .slice(0, 10);
+
+            const ctx = document.getElementById('speedChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(d => d.shortName),
+                    datasets: [{
+                        label: 'Velocidad Promedio (km/h)',
+                        data: top10.map(d => d.averageSpeedKmh),
+                        backgroundColor: 'rgba(52, 152, 219, 0.7)',
+                        borderColor: 'rgba(41, 128, 185, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function filterTable() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById("routesTable");
+            const tr = table.getElementsByTagName("tr");
+
+            for (let i = 1; i < tr.length; i++) {
+                const tdId = tr[i].getElementsByTagName("td")[0];
+                const tdName = tr[i].getElementsByTagName("td")[1];
+                if (tdId || tdName) {
+                    const txtId = tdId.textContent || tdId.innerText;
+                    const txtName = tdName.textContent || tdName.innerText;
+                    if (txtId.toUpperCase().indexOf(filter) > -1 || txtName.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
