@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>SITM-MIO — Dashboard de Análisis</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f1724;
+            --panel: #172033;
+            --panel-2: #1f2a44;
+            --accent: #38bdf8;
+            --accent-2: #22d3ee;
+            --good: #34d399;
+            --warn: #fbbf24;
+            --bad: #f87171;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(180deg, #0b1220 0%, #0f1724 100%);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 22px;
+            background: rgba(15, 23, 36, 0.85);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(6px);
+        }
+        header .brand { display: flex; align-items: center; gap: 12px; }
+        header .logo {
+            width: 38px; height: 38px; border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: #04243a;
+        }
+        header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+        header .subtitle { font-size: 12px; color: var(--muted); }
+        .version-badge {
+            padding: 6px 14px; border-radius: 999px;
+            background: var(--panel-2); color: var(--accent);
+            border: 1px solid var(--accent); font-weight: 600;
+            font-size: 12px; letter-spacing: 0.5px;
+        }
+        main {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            grid-template-rows: 1fr auto;
+            gap: 14px;
+            padding: 14px;
+            height: calc(100vh - 67px);
+            overflow: hidden;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel h2 {
+            font-size: 13px;
+            margin: 0 0 10px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .panel h2 .pill {
+            font-size: 11px; padding: 3px 10px; border-radius: 999px;
+            background: rgba(56, 189, 248, 0.12); color: var(--accent);
+            border: 1px solid var(--accent); letter-spacing: 0.3px;
+        }
+        #map-panel { grid-row: 1 / span 2; }
+        #map {
+            flex: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+            background:
+                radial-gradient(ellipse at 35% 40%, rgba(56,189,248,0.10) 0%, transparent 55%),
+                radial-gradient(ellipse at 70% 70%, rgba(34,211,238,0.06) 0%, transparent 55%),
+                linear-gradient(135deg, #18243d 0%, #0c1422 100%);
+        }
+        #map svg.cali-svg {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            display: block;
+        }
+        #map .map-grid {
+            position: absolute; inset: 0; pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        #map .marker {
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.7);
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        #map .marker:hover { transform: translate(-50%, -50%) scale(1.4); z-index: 10; }
+        #tooltip {
+            position: absolute;
+            background: rgba(15, 23, 36, 0.95);
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--text);
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+            max-width: 260px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        #tooltip b { color: var(--accent); }
+        .legend-strip {
+            display: flex; align-items: center; gap: 12px;
+            margin-top: 10px; font-size: 12px; color: var(--muted);
+        }
+        .legend-strip .dot {
+            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+            margin-right: 4px; vertical-align: middle;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .kpi {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+        }
+        .kpi .label {
+            font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .kpi .value {
+            font-size: 22px; font-weight: 700; margin-top: 4px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .kpi .unit { font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
+        .chart-wrap { position: relative; height: 200px; }
+        #table-panel {
+            grid-column: 1 / span 2;
+            grid-row: 2;
+            min-height: 260px;
+            max-height: 280px;
+        }
+        .table-controls {
+            display: flex; gap: 10px; margin-bottom: 8px; align-items: center;
+        }
+        .table-controls input {
+            flex: 1;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        .table-controls select {
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        .table-scroll {
+            flex: 1; overflow: auto; border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        thead th {
+            position: sticky; top: 0;
+            background: var(--panel-2);
+            text-align: left;
+            padding: 9px 12px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+        thead th:hover { color: var(--accent); }
+        tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+        tbody tr:hover { background: rgba(56, 189, 248, 0.05); }
+        .status-ok { color: var(--good); font-weight: 600; }
+        .status-no-data { color: var(--muted); }
+        .speed-bar {
+            display: inline-block; height: 6px; border-radius: 999px;
+            background: var(--good); vertical-align: middle; margin-right: 8px;
+        }
+        #file-pill {
+            font-size: 12px; color: var(--muted);
+            background: var(--panel-2); padding: 4px 10px; border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="brand">
+        <div class="logo">M</div>
+        <div>
+            <h1>SITM-MIO — Dashboard de Análisis</h1>
+            <div class="subtitle">Velocidades promedio por ruta · Sistema Integrado de Transporte Masivo de Cali</div>
+        </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+        <span id="file-pill">Sin archivo</span>
+        <span class="version-badge" id="version-badge">--</span>
+    </div>
+</header>
+
+<main>
+
+    <section id="map-panel" class="panel">
+        <h2>Mapa de rutas <span class="pill" id="map-version-tag">--</span></h2>
+        <div id="map"></div>
+        <div class="legend-strip">
+            <span><span class="dot" style="background:#f87171"></span>&le; 10 km/h</span>
+            <span><span class="dot" style="background:#fbbf24"></span>10–15 km/h</span>
+            <span><span class="dot" style="background:#34d399"></span>15–20 km/h</span>
+            <span><span class="dot" style="background:#38bdf8"></span>&gt; 20 km/h</span>
+            <span style="margin-left:auto;color:var(--muted);font-size:11px;" id="map-meta">--</span>
+        </div>
+    </section>
+
+    <section class="panel">
+        <h2>Indicadores del procesamiento <span class="pill" id="kpi-status">Cálculo completado</span></h2>
+        <div class="stats" id="kpi-grid">
+            <div class="kpi"><div class="label">Rutas analizadas</div><div class="value" id="kpi-routes">--</div></div>
+            <div class="kpi"><div class="label">Rutas con resultado</div><div class="value" id="kpi-ok">--</div></div>
+            <div class="kpi"><div class="label">Velocidad promedio sistema</div><div class="value" id="kpi-speed">--<span class="unit">km/h</span></div></div>
+            <div class="kpi"><div class="label">Muestras totales</div><div class="value" id="kpi-samples">--</div></div>
+            <div class="kpi"><div class="label">Distancia acumulada</div><div class="value" id="kpi-dist">--<span class="unit">km</span></div></div>
+            <div class="kpi"><div class="label">Cobertura</div><div class="value" id="kpi-cov">--<span class="unit">%</span></div></div>
+        </div>
+        <h2 style="margin-top:6px;">Top 10 rutas más rápidas</h2>
+        <div class="chart-wrap"><canvas id="speedChart"></canvas></div>
+    </section>
+
+    <section id="table-panel" class="panel">
+        <h2>Detalle por ruta-mes <span class="pill" id="row-count">0 filas</span></h2>
+        <div class="table-controls">
+            <input id="searchInput" type="text" placeholder="Buscar por nombre o ID…" />
+            <select id="statusFilter">
+                <option value="">Todos los estados</option>
+                <option value="OK">OK</option>
+                <option value="NO_DATA">NO_DATA</option>
+            </select>
+            <select id="speedFilter">
+                <option value="">Todas las velocidades</option>
+                <option value="0-10">&le; 10 km/h</option>
+                <option value="10-15">10–15 km/h</option>
+                <option value="15-20">15–20 km/h</option>
+                <option value="20-">&gt; 20 km/h</option>
+            </select>
+        </div>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                <tr>
+                    <th data-key="lineId">ID</th>
+                    <th data-key="shortName">Ruta</th>
+                    <th data-key="description">Descripción</th>
+                    <th data-key="year">Año</th>
+                    <th data-key="month">Mes</th>
+                    <th data-key="averageSpeedKmh">Velocidad (km/h)</th>
+                    <th data-key="totalDistanceMeters">Distancia (km)</th>
+                    <th data-key="samples">Muestras</th>
+                    <th data-key="status">Estado</th>
+                </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+
+<script>
+    let allData = [];
+    const CALI_BBOX = { latMin: 3.36, latMax: 3.50, lngMin: -76.58, lngMax: -76.46 };
+
+    let speedChart;
+    let sortKey = null, sortDir = 1;
+
+    function initMap() {
+        // Mapa SVG estático puro — sin Leaflet, sin tiles, sin proyecciones.
+        // El SVG llena el div #map al 100% via CSS (width/height 100%).
+        const mapDiv = document.getElementById('map');
+        mapDiv.innerHTML =
+            '<svg class="cali-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid meet">' +
+                '<defs>' +
+                    '<linearGradient id="urbanGrad" x1="0" x2="1" y1="0" y2="1">' +
+                        '<stop offset="0" stop-color="#1e3a5f" stop-opacity="0.55"/>' +
+                        '<stop offset="1" stop-color="#0f2440" stop-opacity="0.35"/>' +
+                    '</linearGradient>' +
+                    '<linearGradient id="riverGrad" x1="0" x2="0" y1="0" y2="1">' +
+                        '<stop offset="0" stop-color="#22d3ee" stop-opacity="0.5"/>' +
+                        '<stop offset="1" stop-color="#0891b2" stop-opacity="0.4"/>' +
+                    '</linearGradient>' +
+                '</defs>' +
+                '<path d="M 380 120 Q 520 80 620 180 Q 720 240 720 360 Q 740 460 700 560 Q 680 680 600 760 Q 500 840 380 820 Q 260 800 230 700 Q 200 580 240 480 Q 260 360 320 260 Q 340 180 380 120 Z" fill="url(#urbanGrad)" stroke="rgba(56,189,248,0.35)" stroke-width="2"/>' +
+                '<path d="M 320 60 Q 350 200 330 360 Q 300 520 340 680 Q 360 820 320 980" fill="none" stroke="url(#riverGrad)" stroke-width="6" stroke-linecap="round"/>' +
+                '<path d="M 700 200 Q 600 300 500 360 Q 400 400 340 420" fill="none" stroke="rgba(34,211,238,0.35)" stroke-width="3" stroke-linecap="round"/>' +
+                '<g stroke="rgba(255,255,255,0.15)" stroke-width="1.5" fill="none">' +
+                    '<path d="M 250 500 L 720 500"/>' +
+                    '<path d="M 400 150 L 450 800"/>' +
+                    '<path d="M 500 100 L 530 850"/>' +
+                    '<path d="M 280 300 Q 450 400 700 320"/>' +
+                    '<path d="M 350 700 Q 500 650 680 700"/>' +
+                '</g>' +
+                '<g fill="rgba(255,255,255,0.08)">' +
+                    '<circle cx="450" cy="300" r="14"/>' +
+                    '<circle cx="540" cy="450" r="14"/>' +
+                    '<circle cx="430" cy="520" r="14"/>' +
+                    '<circle cx="500" cy="640" r="14"/>' +
+                    '<circle cx="600" cy="380" r="14"/>' +
+                    '<circle cx="350" cy="450" r="14"/>' +
+                '</g>' +
+                '<text x="500" y="475" text-anchor="middle" fill="rgba(255,255,255,0.18)" font-size="60" font-family="Arial Black,Arial" letter-spacing="8" font-weight="900">CALI</text>' +
+                '<text x="500" y="510" text-anchor="middle" fill="rgba(255,255,255,0.10)" font-size="14" font-family="Arial" letter-spacing="6">VALLE DEL CAUCA</text>' +
+                '<g id="markers-group"></g>' +
+            '</svg>' +
+            '<div class="map-grid"></div>' +
+            '<div id="tooltip"></div>';
+    }
+
+    function refreshMap(rows) {
+        const markersGroup = document.querySelector('#markers-group');
+        if (!markersGroup) return;
+        markersGroup.innerHTML = '';
+        const okRows = rows.filter(function (r) { return r.status === 'OK'; });
+
+        okRows.forEach(function (r) {
+            const s = +r.averageSpeedKmh || 0;
+            // Convertir lat/lng del bbox a coordenadas del SVG (0..1000)
+            const pos = seededPos(r.lineId + '-' + r.shortName);
+            const lat = pos[0], lng = pos[1];
+            const x = ((lng - CALI_BBOX.lngMin) / (CALI_BBOX.lngMax - CALI_BBOX.lngMin)) * 1000;
+            const y = (1 - (lat - CALI_BBOX.latMin) / (CALI_BBOX.latMax - CALI_BBOX.latMin)) * 1000;
+            const radius = 8 + Math.min(14, (+r.samples || 0) / 30000);
+            const color = colorForSpeed(s);
+
+            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            c.setAttribute('cx', x);
+            c.setAttribute('cy', y);
+            c.setAttribute('r', radius);
+            c.setAttribute('fill', color);
+            c.setAttribute('fill-opacity', '0.85');
+            c.setAttribute('stroke', 'rgba(255,255,255,0.7)');
+            c.setAttribute('stroke-width', '1');
+            c.setAttribute('style', 'cursor:pointer;transition:transform 0.15s');
+
+            const popupHtml =
+                '<b>' + (r.shortName || '') + '</b> — ' + (r.description || '') + '<br>' +
+                'Velocidad promedio: <b>' + s.toFixed(2) + ' km/h</b><br>' +
+                'Año/Mes: ' + r.year + '-' + String(r.month).padStart(2,'0') + '<br>' +
+                'Muestras: ' + (+r.samples).toLocaleString() + '<br>' +
+                'Distancia: ' + ((+r.totalDistanceMeters || 0)/1000).toFixed(2) + ' km';
+
+            c.addEventListener('mouseenter', function (ev) {
+                const tip = document.getElementById('tooltip');
+                tip.innerHTML = popupHtml;
+                tip.style.display = 'block';
+            });
+            c.addEventListener('mousemove', function (ev) {
+                const tip = document.getElementById('tooltip');
+                const rect = document.getElementById('map').getBoundingClientRect();
+                tip.style.left = (ev.clientX - rect.left + 12) + 'px';
+                tip.style.top = (ev.clientY - rect.top + 12) + 'px';
+            });
+            c.addEventListener('mouseleave', function () {
+                document.getElementById('tooltip').style.display = 'none';
+            });
+
+            markersGroup.appendChild(c);
+        });
+        document.getElementById('map-meta').innerText = okRows.length + ' rutas (posiciones simuladas en el bbox de Cali — la posición real requiere GPS por datagrama)';
+    }
+
+    function colorForSpeed(s) {
+        if (s <= 10) return '#f87171';
+        if (s <= 15) return '#fbbf24';
+        if (s <= 20) return '#34d399';
+        return '#38bdf8';
+    }
+
+    function seededPos(seedStr) {
+        let h = 2166136261;
+        for (let i = 0; i < seedStr.length; i++) {
+            h ^= seedStr.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        const r1 = ((h >>> 0) % 10000) / 10000;
+        const r2 = (((h >>> 8) >>> 0) % 10000) / 10000;
+        const lat = CALI_BBOX.latMin + r1 * (CALI_BBOX.latMax - CALI_BBOX.latMin);
+        const lng = CALI_BBOX.lngMin + r2 * (CALI_BBOX.lngMax - CALI_BBOX.lngMin);
+        return [lat, lng];
+    }
+
+    function refreshMap(rows) {
+        if (!map) return;
+        markersLayer.clearLayers();
+        const okRows = rows.filter(r => r.status === 'OK');
+        okRows.forEach(r => {
+            const s = +r.averageSpeedKmh || 0;
+            const pos = seededPos(r.lineId + '-' + r.shortName);
+            const marker = L.circleMarker(pos, {
+                radius: 5 + Math.min(8, (+r.samples || 0) / 30000),
+                color: colorForSpeed(s),
+                fillColor: colorForSpeed(s),
+                fillOpacity: 0.85,
+                weight: 1
+            });
+            marker.bindPopup(
+                '<div style="font-family:Segoe UI,Arial;font-size:13px;color:#0f1724">' +
+                '<b>' + (r.shortName || '') + '</b> — ' + (r.description || '') + '<br>' +
+                'Velocidad promedio: <b>' + s.toFixed(2) + ' km/h</b><br>' +
+                'Año/Mes: ' + r.year + '-' + String(r.month).padStart(2,'0') + '<br>' +
+                'Muestras: ' + (+r.samples).toLocaleString() + '<br>' +
+                'Distancia: ' + ((+r.totalDistanceMeters || 0)/1000).toFixed(2) + ' km' +
+                '</div>'
+            );
+            marker.addTo(markersLayer);
+        });
+        document.getElementById('map-meta').innerText = okRows.length + ' rutas geolocalizadas (posición simulada dentro del bounding box de Cali)';
+    }
+
+    function detectVersion(name) {
+        if (!name) return { tag: '--', label: '--' };
+        const n = name.toLowerCase();
+        if (n.indexOf('dist') >= 0) return { tag: 'V3 Distribuida', label: 'Scatter-Gather' };
+        if (n.indexOf('v2')   >= 0) return { tag: 'V2 Concurrente', label: 'Fork/Join' };
+        if (n.indexOf('v1')   >= 0 || n.indexOf('mini') >= 0) return { tag: 'V1 Monolítica', label: 'Secuencial' };
+        return { tag: name, label: 'CSV' };
+    }
+
+    function updateKPIs(rows) {
+        const ok = rows.filter(r => r.status === 'OK');
+        const speeds = ok.map(r => +r.averageSpeedKmh).filter(s => s > 0);
+        const totalSamples = ok.reduce((a, r) => a + (+r.samples || 0), 0);
+        const totalDistKm = ok.reduce((a, r) => a + (+r.totalDistanceMeters || 0), 0) / 1000;
+        const avgSpeed = speeds.length ? (speeds.reduce((a, b) => a + b, 0) / speeds.length) : 0;
+        const cov = rows.length ? (ok.length / rows.length) * 100 : 0;
+
+        document.getElementById('kpi-routes').innerText = rows.length.toLocaleString();
+        document.getElementById('kpi-ok').innerText = ok.length.toLocaleString() + '/' + rows.length.toLocaleString();
+        document.getElementById('kpi-speed').innerHTML = avgSpeed.toFixed(2) + '<span class="unit">km/h</span>';
+        document.getElementById('kpi-samples').innerText = totalSamples.toLocaleString();
+        document.getElementById('kpi-dist').innerHTML = totalDistKm.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",") + '<span class="unit">km</span>';
+        document.getElementById('kpi-cov').innerHTML = cov.toFixed(1) + '<span class="unit">%</span>';
+    }
+
+    function renderChart(rows) {
+        const ok = rows.filter(r => r.status === 'OK' && +r.averageSpeedKmh > 0);
+        const top = ok.slice().sort((a, b) => +b.averageSpeedKmh - +a.averageSpeedKmh).slice(0, 10);
+        const labels = top.map(r => r.shortName);
+        const data = top.map(r => +r.averageSpeedKmh);
+        const colors = data.map(colorForSpeed);
+
+        const ctx = document.getElementById('speedChart').getContext('2d');
+        if (speedChart) speedChart.destroy();
+        speedChart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: labels, datasets: [{ data: data, backgroundColor: colors, borderRadius: 6 }] },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false },
+                    tooltip: { callbacks: { label: function(c) { return c.parsed.x.toFixed(2) + ' km/h'; } } }
+                },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    y: { ticks: { color: '#e2e8f0', font: { size: 11 } }, grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderTable() {
+        const q = document.getElementById('searchInput').value.toLowerCase();
+        const sf = document.getElementById('statusFilter').value;
+        const spf = document.getElementById('speedFilter').value;
+
+        let rows = allData.filter(function (r) {
+            const hay = ((r.shortName || '') + ' ' + (r.description || '') + ' ' + (r.lineId || '')).toLowerCase();
+            if (q && hay.indexOf(q) < 0) return false;
+            if (sf && r.status !== sf) return false;
+            if (spf) {
+                const s = +r.averageSpeedKmh || 0;
+                if (spf === '0-10' && !(s <= 10)) return false;
+                if (spf === '10-15' && !(s > 10 && s <= 15)) return false;
+                if (spf === '15-20' && !(s > 15 && s <= 20)) return false;
+                if (spf === '20-' && !(s > 20)) return false;
+            }
+            return true;
+        });
+
+        if (sortKey) {
+            rows.sort(function (a, b) {
+                const av = a[sortKey], bv = b[sortKey];
+                const an = parseFloat(av), bn = parseFloat(bv);
+                const cmp = (!isNaN(an) && !isNaN(bn)) ? an - bn : String(av).localeCompare(String(bv));
+                return cmp * sortDir;
+            });
+        }
+
+        const maxSpeed = Math.max.apply(null, allData.filter(function(r){return r.status==='OK';}).map(function(r){return +r.averageSpeedKmh || 0;}).concat([1]));
+        const body = document.getElementById('tableBody');
+        body.innerHTML = rows.slice(0, 1500).map(function (r) {
+            const s = +r.averageSpeedKmh || 0;
+            const distKm = ((+r.totalDistanceMeters || 0) / 1000).toFixed(2);
+            const bar = '<span class="speed-bar" style="width:' + (s / maxSpeed * 80).toFixed(0) + 'px; background:' + colorForSpeed(s) + '"></span>';
+            const statusClass = r.status === 'OK' ? 'status-ok' : 'status-no-data';
+            return '<tr>' +
+                '<td>' + (r.lineId || '') + '</td>' +
+                '<td><b>' + (r.shortName || '') + '</b></td>' +
+                '<td>' + (r.description || '') + '</td>' +
+                '<td>' + (r.year || '') + '</td>' +
+                '<td>' + (r.month || '') + '</td>' +
+                '<td>' + bar + s.toFixed(2) + '</td>' +
+                '<td>' + distKm + '</td>' +
+                '<td>' + (+r.samples || 0).toLocaleString() + '</td>' +
+                '<td class="' + statusClass + '">' + (r.status || '') + '</td>' +
+                '</tr>';
+        }).join('');
+        document.getElementById('row-count').innerText = rows.length.toLocaleString() + ' filas';
+    }
+
+    function renderAll(rows, fname) {
+        allData = rows || [];
+        const ver = detectVersion(fname);
+        document.getElementById('version-badge').innerText = ver.tag;
+        document.getElementById('map-version-tag').innerText = ver.label;
+        document.getElementById('file-pill').innerText = fname || '(sin archivo)';
+        updateKPIs(allData);
+        renderChart(allData);
+        // Forzar reflow del mapa y reajustar viewport al bbox de Cali
+        if (map) {
+            map.invalidateSize();
+            const b = L.latLngBounds(
+                [CALI_BBOX.latMin, CALI_BBOX.lngMin],
+                [CALI_BBOX.latMax, CALI_BBOX.lngMax]
+            );
+            map.fitBounds(b, { padding: [10, 10], animate: false });
+        }
+        refreshMap(allData);
+        setTimeout(function () {
+            if (map) {
+                map.invalidateSize();
+                const b = L.latLngBounds(
+                    [CALI_BBOX.latMin, CALI_BBOX.lngMin],
+                    [CALI_BBOX.latMax, CALI_BBOX.lngMax]
+                );
+                map.fitBounds(b, { padding: [10, 10], animate: false });
+            }
+        }, 200);
+        renderTable();
+    }
+
+    // API expuesta a Java: setData(jsonString, filename)
+    function setData(jsonData, fname) {
+        try {
+            const data = (typeof jsonData === 'string') ? JSON.parse(jsonData) : jsonData;
+            renderAll(data, fname);
+        } catch (e) {
+            console.error('Error parseando JSON desde Java:', e);
+        }
+    }
+    window.setData = setData;
+
+    // Soporte de arrastrar CSV al abrir el HTML directo en el navegador
+    function csvToJson(text) {
+        const lines = text.split(/\r?\n/).filter(function (l) { return l.length; });
+        if (!lines.length) return [];
+        const headers = lines[0].split(',');
+        return lines.slice(1).map(function (line) {
+            const values = [];
+            let cur = '', inQ = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') inQ = !inQ;
+                else if (ch === ',' && !inQ) { values.push(cur); cur = ''; }
+                else cur += ch;
+            }
+            values.push(cur);
+            const obj = {};
+            headers.forEach(function (h, i) { obj[h] = (values[i] || '').trim(); });
+            return obj;
+        });
+    }
+    function setupDropZone() {
+        document.body.addEventListener('dragover', function (e) { e.preventDefault(); });
+        document.body.addEventListener('drop', function (e) {
+            e.preventDefault();
+            const f = e.dataTransfer.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = function (ev) { renderAll(csvToJson(ev.target.result), f.name); };
+            r.readAsText(f);
+        });
+    }
+
+    document.querySelectorAll('th[data-key]').forEach(function (th) {
+        th.addEventListener('click', function () {
+            const k = th.dataset.key;
+            if (sortKey === k) sortDir = -sortDir;
+            else { sortKey = k; sortDir = 1; }
+            renderTable();
+        });
+    });
+    document.getElementById('searchInput').addEventListener('input', renderTable);
+    document.getElementById('statusFilter').addEventListener('change', renderTable);
+    document.getElementById('speedFilter').addEventListener('change', renderTable);
+
+    window.addEventListener('DOMContentLoaded', function () {
+        initMap();
+        setupDropZone();
+        renderTable();
+        if (!allData.length) {
+            document.getElementById('file-pill').innerText = 'Esperando datos…';
+        }
+    });
+</script>
+</body>
+</html>

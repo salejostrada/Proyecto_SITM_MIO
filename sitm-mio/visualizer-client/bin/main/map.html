@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <title>SITM-MIO — Monitoreo en Tiempo Real</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg: #0f1724;
+            --panel: #172033;
+            --panel-2: #1f2a44;
+            --accent: #38bdf8;
+            --accent-2: #22d3ee;
+            --good: #34d399;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Roboto, Arial, sans-serif; color: var(--text); }
+        #app {
+            display: grid; grid-template-columns: 1fr 320px;
+            height: 100vh; background: var(--bg);
+        }
+        #map {
+            height: 100%; width: 100%;
+            background:
+                radial-gradient(ellipse at 35% 40%, rgba(56,189,248,0.10) 0%, transparent 55%),
+                radial-gradient(ellipse at 70% 70%, rgba(34,211,238,0.06) 0%, transparent 55%),
+                linear-gradient(135deg, #18243d 0%, #0c1422 100%);
+        }
+        #map .leaflet-tile-pane { display: none; }
+        aside {
+            background: linear-gradient(180deg, #0b1220, #0f1724);
+            border-left: 1px solid var(--border);
+            padding: 18px; overflow-y: auto;
+        }
+        aside h1 {
+            font-size: 17px; margin: 0 0 4px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        aside .subtitle { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
+        .live-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; padding: 4px 10px; border-radius: 999px;
+            background: rgba(52, 211, 153, 0.12); color: var(--good); border: 1px solid var(--good);
+            margin-bottom: 18px;
+        }
+        .live-badge .pulse {
+            width: 8px; height: 8px; border-radius: 50%; background: var(--good);
+            animation: pulse 1.4s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.3); }
+        }
+        .kpi {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 14px; margin-bottom: 10px;
+        }
+        .kpi .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.7px; }
+        .kpi .value { font-size: 22px; font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .kpi .unit { font-size: 12px; color: var(--muted); margin-left: 4px; }
+        .events {
+            margin-top: 14px;
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 10px; padding: 10px 14px;
+            max-height: 280px; overflow-y: auto;
+        }
+        .events h3 {
+            margin: 0 0 8px; font-size: 11px;
+            color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+        }
+        .events .row {
+            font-size: 12px; padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; gap: 10px;
+        }
+        .events .row:last-child { border-bottom: none; }
+        .events .bus { color: var(--accent); font-weight: 600; }
+        .events .time { color: var(--muted); font-size: 11px; }
+        .bus-marker {
+            background: #38bdf8;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 16px !important; height: 16px !important;
+            box-shadow: 0 0 8px rgba(56,189,248,0.8);
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <div id="map"></div>
+
+    <aside>
+        <h1>SITM-MIO — Monitoreo</h1>
+        <div class="subtitle">Visualización en vivo de buses por ICE Pub/Sub</div>
+        <div class="live-badge"><span class="pulse"></span>EN VIVO</div>
+
+        <div class="kpi"><div class="label">Buses activos</div><div class="value" id="kpi-buses">0</div></div>
+        <div class="kpi"><div class="label">Rutas observadas</div><div class="value" id="kpi-routes">0</div></div>
+        <div class="kpi"><div class="label">Eventos recibidos</div><div class="value" id="kpi-events">0</div></div>
+        <div class="kpi"><div class="label">Último evento</div><div class="value" id="kpi-last" style="font-size:14px;">--</div></div>
+
+        <div class="events">
+            <h3>Eventos recientes</h3>
+            <div id="events-list"></div>
+        </div>
+    </aside>
+</div>
+
+<script>
+    const CALI_BBOX = [[3.36, -76.58], [3.50, -76.46]];
+    const map = L.map('map', {
+        preferCanvas: true,
+        attributionControl: false,
+        minZoom: 10, maxZoom: 15,
+        zoomSnap: 0.25
+    });
+
+    // Mapa estilizado offline (mismo SVG embebido que el dashboard)
+    const caliSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" preserveAspectRatio="none">' +
+        '<defs>' +
+        '<linearGradient id="urbanGrad" x1="0" x2="1" y1="0" y2="1">' +
+        '<stop offset="0" stop-color="#1e3a5f" stop-opacity="0.55"/>' +
+        '<stop offset="1" stop-color="#0f2440" stop-opacity="0.35"/></linearGradient>' +
+        '<linearGradient id="riverGrad" x1="0" x2="0" y1="0" y2="1">' +
+        '<stop offset="0" stop-color="#22d3ee" stop-opacity="0.5"/>' +
+        '<stop offset="1" stop-color="#0891b2" stop-opacity="0.4"/></linearGradient>' +
+        '</defs>' +
+        '<path d="M 380 120 Q 520 80 620 180 Q 720 240 720 360 Q 740 460 700 560 Q 680 680 600 760 Q 500 840 380 820 Q 260 800 230 700 Q 200 580 240 480 Q 260 360 320 260 Q 340 180 380 120 Z" fill="url(#urbanGrad)" stroke="rgba(56,189,248,0.35)" stroke-width="2"/>' +
+        '<path d="M 320 60 Q 350 200 330 360 Q 300 520 340 680 Q 360 820 320 980" fill="none" stroke="url(#riverGrad)" stroke-width="6" stroke-linecap="round"/>' +
+        '<path d="M 700 200 Q 600 300 500 360 Q 400 400 340 420" fill="none" stroke="rgba(34,211,238,0.35)" stroke-width="3" stroke-linecap="round"/>' +
+        '<g stroke="rgba(255,255,255,0.15)" stroke-width="1.5" fill="none">' +
+        '<path d="M 250 500 L 720 500"/><path d="M 400 150 L 450 800"/>' +
+        '<path d="M 500 100 L 530 850"/><path d="M 280 300 Q 450 400 700 320"/>' +
+        '<path d="M 350 700 Q 500 650 680 700"/></g>' +
+        '<text x="500" y="475" text-anchor="middle" fill="rgba(255,255,255,0.18)" font-size="60" font-family="Arial Black,Arial" letter-spacing="8" font-weight="900">CALI</text>' +
+        '<text x="500" y="510" text-anchor="middle" fill="rgba(255,255,255,0.10)" font-size="14" font-family="Arial" letter-spacing="6">VALLE DEL CAUCA</text>' +
+        '</svg>';
+    const svgUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(caliSvg);
+    const boundsObj = L.latLngBounds(CALI_BBOX[0], CALI_BBOX[1]);
+    L.imageOverlay(svgUrl, boundsObj, { opacity: 1, interactive: false }).addTo(map);
+
+    function fitMapToBounds() {
+        map.invalidateSize();
+        map.fitBounds(boundsObj, { padding: [10, 10], animate: false });
+    }
+    setTimeout(fitMapToBounds, 100);
+    setTimeout(fitMapToBounds, 400);
+    setTimeout(fitMapToBounds, 1000);
+    window.addEventListener('resize', fitMapToBounds);
+
+    const buses = {};       // busId -> { marker, line, lineId }
+    const routes = new Set();
+    let eventCount = 0;
+    const eventsListEl = document.getElementById('events-list');
+
+    function lineColor(lineId) {
+        const palette = ['#38bdf8', '#22d3ee', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#f472b6', '#60a5fa'];
+        return palette[Math.abs(lineId) % palette.length];
+    }
+
+    function busIcon(lineId) {
+        const c = lineColor(lineId);
+        return L.divIcon({
+            className: '',
+            html: '<div style="background:' + c + ';width:14px;height:14px;border-radius:50%;border:2px solid white;box-shadow:0 0 8px ' + c + 'cc;"></div>',
+            iconSize: [18, 18], iconAnchor: [9, 9]
+        });
+    }
+
+    function updateBus(busId, lat, lng, lineId, timestamp) {
+        eventCount++;
+        routes.add(lineId);
+        const c = lineColor(lineId);
+
+        if (buses[busId]) {
+            buses[busId].marker.setLatLng([lat, lng]);
+            buses[busId].trail.push([lat, lng]);
+            if (buses[busId].trail.length > 30) buses[busId].trail.shift();
+            buses[busId].line.setLatLngs(buses[busId].trail);
+        } else {
+            const marker = L.marker([lat, lng], { icon: busIcon(lineId) }).addTo(map);
+            const trail = [[lat, lng]];
+            const line = L.polyline(trail, { color: c, weight: 3, opacity: 0.65 }).addTo(map);
+            marker.bindPopup('<div style="font-family:Segoe UI,Arial;color:#0f1724"><b>Bus ' + busId + '</b><br>Ruta: ' + lineId + '<br>Hora: ' + timestamp + '</div>');
+            buses[busId] = { marker: marker, line: line, trail: trail, lineId: lineId };
+        }
+        buses[busId].marker.setPopupContent('<div style="font-family:Segoe UI,Arial;color:#0f1724"><b>Bus ' + busId + '</b><br>Ruta: ' + lineId + '<br>Hora: ' + timestamp + '</div>');
+
+        document.getElementById('kpi-buses').innerText = Object.keys(buses).length;
+        document.getElementById('kpi-routes').innerText = routes.size;
+        document.getElementById('kpi-events').innerText = eventCount.toLocaleString();
+        document.getElementById('kpi-last').innerText = timestamp || '--';
+
+        const row = document.createElement('div');
+        row.className = 'row';
+        row.innerHTML = '<span><span class="bus">Bus ' + busId + '</span> · ruta ' + lineId + '</span><span class="time">' + (timestamp || '') + '</span>';
+        eventsListEl.prepend(row);
+        while (eventsListEl.children.length > 30) eventsListEl.removeChild(eventsListEl.lastChild);
+    }
+    window.updateBus = updateBus;
+</script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+lineId,shortName,description,year,month,averageSpeedKmh,totalDistanceMeters,totalTimeSeconds,samples,status
+-1,TESTGT1,NA,2019,5,0.00,0.00,0.00,0,NO_DATA
+8,TESTGT2,NA,2019,5,0.00,0.00,0.00,0,NO_DATA
+131,T31,Terminal Paso del Comercio - Universidades,2019,5,16.50,13985895.00,3051338.00,133537,OK
+140,T40,Terminal Andrés Sanín - Centro,2019,5,15.42,6458017.00,1507333.00,69331,OK
+142,T42,Pizamos - Centro - Terminal,2019,5,16.13,9176091.00,2047838.00,100946,OK
+150,T50,Estación Nuevo Latír - Centro,2019,5,15.80,4706447.00,1072203.00,54204,OK
+217,P17,P.U.J - Icesi - Estación Unidad Deportiva,2019,5,16.10,2143481.00,479336.00,18771,OK
+243,TESTGT3,NA,2019,5,14.20,1376526.00,348974.00,17049,OK
+251,P51,Pízamos - Universidades,2019,5,0.00,0.00,0.00,0,NO_DATA
+271,P71,Caney - Estación Unidad Deportiva,2019,5,10.49,2483484.00,852413.00,44730,OK
+272,P72,Estación Capri- Centro Empresa,2019,5,12.28,6328387.00,1854522.00,85865,OK
+282,P82,Terminal Calipso - Terminal Menga,2019,5,12.16,3141131.00,930033.00,49390,OK
+283,P83,Terminal Calipso - Terminal Paso de Comercio,2019,5,0.00,0.00,0.00,0,NO_DATA
+302,A02,Atenas - Zoológico - Estación San Bosco,2019,5,11.61,1775477.00,550436.00,31956,OK
+303,A03,Nacional - Santa librada,2019,5,11.82,324455.00,98815.00,7400,OK
+304,A04,Bella Vista - Estación Manzana del saber,2019,5,13.10,801339.00,220268.00,14679,OK
+305,A05,Av. De Las Américas - C.A.M - La Portada,2019,5,13.18,1616010.00,441485.00,24170,OK
+306,A06,Aguacatal - Estación San Bosco,2019,5,12.25,1695780.00,498225.00,31800,OK
+311,A11,Icesi - P.U.J - Estación Universidades,2019,5,9.89,2339608.00,851920.00,38682,OK
+318,A18,Hacienda El Castillo - Estación Universidades,2019,5,16.58,1986448.00,431423.00,18864,OK
+321,A21,Ciudadela Floralia - Terminal Menga,2019,5,12.41,1444257.00,418918.00,21127,OK
+322,A22,Brisas de los Áamos- Terminal Menga,2019,5,14.25,1206691.00,304948.00,16461,OK
+323,A23,Ciudadela Los Álamos-Terminal Menga,2019,5,10.65,319858.00,108091.00,5460,OK
+324,A24,San Miguel - El Bosque - Estación Vipasa,2019,5,11.20,246943.00,79355.00,5179,OK
+332,A32,Flora Industrial - Estación Chiminangos,2019,5,11.43,817242.00,257419.00,16708,OK
+333,A33,Ciudadela Floralia,2019,5,13.41,1243809.00,333928.00,17660,OK
+334,A34,Alcázares - Terminal Paso del Comercio,2019,5,14.87,1062721.00,257359.00,15123,OK
+336,A36,Guayacanes - Estación Chiminangos,2019,5,12.40,551404.00,160074.00,11116,OK
+347,A47,Pizamos - Terminal Andrés Sanín,2019,5,12.08,3693440.00,1101068.00,70518,OK
+352,A52,Hospital Isaias Duarte Cancino - Estación Nuevo La,2019,5,11.38,718934.00,227490.00,14177,OK
+353,A53,Estación Amanecer - Los Lagos -Terminal Andrés San,2019,5,13.99,739907.00,190357.00,10895,OK
+355,A55,Compartir - Manuela Beltrán-Estación Nuevo Latír,2019,5,10.76,723020.00,241859.00,16445,OK
+357,A57,Villa Luz - Estación Nuevo Latír,2019,5,12.29,1125574.00,329814.00,21149,OK
+370,A70,Mortiñal - Estación Tequendama,2019,5,12.44,903961.00,261642.00,13635,OK
+371,A71,Los Chorros - Terminal Cañaveralejo,2019,5,15.69,2306662.00,529334.00,29394,OK
+373,A73,Nápoles - Caldas - Terminal Cañaveralejo,2019,5,13.33,2308625.00,623313.00,35153,OK
+375,A75,La Sirena-Terminal Cañaveralejo,2019,5,14.56,1195938.00,295674.00,20851,OK
+376,A76,H.U.V - Terminal Cañaveralejo,2019,5,11.46,1715673.00,538749.00,27302,OK
+377,A77,Ciudad 2000 - Estación Refugio,2019,5,11.87,1205040.00,365484.00,22883,OK
+385,A85,Estación Santa Mónica - Terminal Andrés Sanín,2019,5,13.86,2337082.00,607222.00,40056,OK
+421,E21,Terminal Menga - Estación Universidades,2019,5,18.43,18132422.00,3541137.00,138633,OK
+427,E27,Terminal Menga - Estación Capri,2019,5,17.00,6659174.00,1409927.00,59771,OK
+431,E31,Terminal Paso del Comercio - Universidades,2019,5,21.34,7588394.00,1279885.00,50454,OK
+437,E37,Terminal Paso del Comercio - Universidades,2019,5,19.27,10482504.00,1958541.00,79398,OK
+441,E41,Terminal Andrés Sanín - Universidades,2019,5,18.56,8960106.00,1738094.00,71341,OK
+452,E52,Estación Nuevo Latír - Terminal Calipso - Terminal,2019,5,16.99,2273683.00,481885.00,19913,OK
+547,TESTGT4,NA,2019,5,0.00,0.00,0.00,0,NO_DATA
+551,R51,SUR RESERVA,2019,5,0.00,0.00,0.00,0,NO_DATA
+552,R52,MENGA RESERVA,2019,5,0.00,0.00,0.00,0,NO_DATA
+553,R53,RESERVA PASO DEL COMERCIO,2019,5,0.00,0.00,0.00,0,NO_DATA
+554,R54,SANIN RESERVA,2019,5,0.00,0.00,0.00,0,NO_DATA
+555,R55,CALIPSO RESERVA,2019,5,0.00,0.00,0.00,0,NO_DATA
+557,R57,CAÑAVERALEJO RESERVA,2019,5,0.00,0.00,0.00,0,NO_DATA
+651,D51,Alimentadora Desvio Av. Ciudad de Cali,2019,5,0.00,0.00,0.00,0,NO_DATA
+661,TESTGT5,NA,2019,5,0.00,0.00,0.00,0,NO_DATA
+722,U22,Prueba u22,2019,5,14.23,8806.00,2228.00,81,OK
+999,TESTGT6,NA,2019,5,0.00,0.00,0.00,0,NO_DATA
+1472,T47B,Terminal Andrés Sanín - Estación Unidad Deportiva,2019,5,15.45,9431832.00,2197481.00,104847,OK
+1571,T57A,Estación Nuevo Latír - Estación Unidad Deportiva,2019,5,14.95,8179835.00,1969668.00,95993,OK
+2101,P10A,Estación Universidades - Centro,2019,5,11.42,4457407.00,1405345.00,65754,OK
+2102,P10B,Estación Universidades-El Ingenio-Estación-Estació,2019,5,10.49,3104269.00,1065601.00,51347,OK
+2104,P10D,Estación Universidades - Centro,2019,5,11.05,3610272.00,1175824.00,53226,OK
+2121,P12A,Est. Universidades - Est Nuevo Latír - T. A Sanín,2019,5,13.60,9713351.00,2570873.00,138349,OK
+2141,P14A,Estación Universidades - Terminal Andrés Sanín,2019,5,12.03,1973818.00,590579.00,32303,OK
+2211,P21A,Universidades - Centro - Av Las Américas,2019,5,12.43,6129265.00,1775365.00,86667,OK
+2212,P21B,Terminal Menga - Estación Universidades,2019,5,14.44,8013699.00,1998158.00,109052,OK
+2241,P24A,Terminal Menga- Terminal Andrés Sanín,2019,5,15.17,3205402.00,760713.00,41282,OK
+2242,P24B,C.A.M.  - Terminal Andrés Sanín,2019,5,11.61,5274766.00,1636125.00,84560,OK
+2243,P24C,Terminal Menga-Terminal Andrés Sanín-Decepaz,2019,5,14.33,1821541.00,457486.00,26103,OK
+2273,P27C,Terminal Menga - Estación Universidades,2019,5,13.36,7620895.00,2053666.00,113878,OK
+2274,P27D,Terminal Menga - Estación Capri,2019,5,12.64,7486363.00,2132447.00,101386,OK
+2301,P30A,Estación Flora Industrial-Terminal Menga - Centro,2019,5,12.64,5879083.00,1674279.00,89833,OK
+2401,P40A,Terminal Andrés Sanín - Centro,2019,5,13.45,2810615.00,752216.00,46113,OK
+2402,P40B,Terminal Andrés Sanín -Sena-Centro,2019,5,12.56,4558289.00,1306403.00,76688,OK
+2471,P47A,Terminal Andrés Sanín - Estación Unidad Deportiva,2019,5,10.45,5777126.00,1989950.00,112969,OK
+2472,P47B,Terminal Andrés Sanín - Estación Unidad Deportiva,2019,5,11.75,4508616.00,1381840.00,74558,OK
+2473,P47C,Terminal Andrés Sanín - Estación Capri,2019,5,12.22,5998876.00,1766668.00,97617,OK
+2521,P52A,Amanecer -Terminal Calipso - Av. de las Américas,2019,5,11.56,2738466.00,853117.00,42361,OK
+2524,P52D,Ciudad Cordoba - Centro - Terminal,2019,5,11.54,7299296.00,2276289.00,108885,OK
+2801,P80A,Terminal Calipso - Santa Elena - Centro,2019,5,11.47,807064.00,253318.00,13901,OK
+2841,P84A,Terminal Calipso - Terminal Andres Sanin,2019,5,12.97,4403464.00,1222541.00,76239,OK
+2842,P84B,Terminal Andrés Sanín - Terminal Calipso,2019,5,13.55,3587797.00,952959.00,51386,OK
+3011,A01A,San Bosco - C.A.M - Centro,2019,5,11.46,973478.00,305898.00,13869,OK
+3112,A11B,Universidad Libre - Universidades,2019,5,0.25,1649.00,24201.00,821,OK
+3121,A12A,Altos De La Luisa - Meléndez - Capri,2019,5,9.25,370436.00,144117.00,7490,OK
+3122,A12B,Las Palmas - Estación Meléndez,2019,5,8.00,530696.00,238890.00,11398,OK
+3123,A12C,Meléndez - Estación Capri,2019,5,12.89,866297.00,241929.00,11551,OK
+3124,A12D,Altos De Santa Elena - Estación Meléndez,2019,5,8.13,210111.00,93086.00,4192,OK
+3131,A13A,Caney - Estación Universidades,2019,5,11.33,1586205.00,504173.00,26651,OK
+3132,A13B,Vegas de Comfandi - Caney,2019,5,10.93,354460.00,116711.00,6597,OK
+3133,A13C,Lili - Estación Universidades,2019,5,11.24,865168.00,277211.00,13069,OK
+3141,A14A,U.S.B - Estación Universidades,2019,5,11.74,2867995.00,879206.00,38120,OK
+3142,A14B,La Vorágine - Estación Universidades-,2019,5,0.00,0.00,0.00,0,NO_DATA
+3171,A17A,U.A.O - U. San Martín - Estación Universidades,2019,5,13.09,2342654.00,644167.00,24448,OK
+3172,A17B,Hormiguero - Estación Universidades,2019,5,17.18,1988150.00,416595.00,17892,OK
+3173,A17C,Comfenalco Lili - Estación  Universidades,2019,5,0.00,0.00,0.00,0,NO_DATA
+3191,A19A,Comfandi Pance - Estación Universidades,2019,5,11.40,762237.00,240732.00,10904,OK
+3192,A19B,La Buitrera - Estación Buitrera,2019,5,14.75,1051317.00,256594.00,14838,OK
+3351,A35A,Calimio Norte - Terminal Paso del Comercio,2019,5,15.63,1242675.00,286148.00,13894,OK
+3371,A37A,Sena - Estación Salomia,2019,5,11.78,1205223.00,368170.00,21549,OK
+3372,A37B,Sena - Estación Flora Industrial,2019,5,10.67,1092389.00,368656.00,21371,OK
+3411,A41A,Pizamos-Terminal Andrés Sanín,2019,5,13.11,3225129.00,885529.00,54730,OK
+3413,A41C,Valle Grande - Terminal Andrés Sanín,2019,5,13.35,471010.00,127052.00,7830,OK
+3422,A42B,La Casona - Terminal Andrés Sanín,2019,5,15.30,1491751.00,350945.00,19959,OK
+3441,A44A,Manuela Beltrán - Terminal Andrés Sanín,2019,5,12.41,1958387.00,568319.00,32795,OK
+3442,A44B,Puertas Del sol - Terminal Andrés Sanín,2019,5,13.90,1526023.00,395158.00,22980,OK
+3452,A45B,San Marino - Estación Villacolombia,2019,5,12.63,954045.00,272039.00,16672,OK
+3721,A72A,Jardines De La Aurora - Terminal  Cañaveralejo,2019,5,11.22,783681.00,251443.00,14902,OK
+3722,A72B,El Cortíjo - Terminal Cañaveralejo,2019,5,10.90,238555.00,78760.00,4297,OK
+3781,A78A,Los Chorros - Estación Caldas,2019,5,9.07,406230.00,161194.00,9280,OK
+4272,E27B,Estación Av Las Américas - Estación Unidad Deporti,2019,5,16.02,1594168.00,358239.00,14325,OK
